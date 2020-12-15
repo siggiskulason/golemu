@@ -208,8 +208,26 @@ func handleRequest(conn net.Conn, tags llrp.Tags) {
 
 		// Respond according to the LLRP packet header
 		header := binary.BigEndian.Uint16(buf[:2])
-		if header == llrp.SetReaderConfigHeader || header == llrp.KeepaliveAckHeader {
-			if header == llrp.SetReaderConfigHeader {
+		log.Info("Got header", header)
+		if header == llrp.SetReaderConfigHeader || header == llrp.KeepaliveAckHeader || header == llrp.GetReaderCapabilityHeader || header == llrp.GetReaderConfigHeader {
+
+			if header == llrp.GetReaderConfigHeader {
+				// SRC received, start ROAR
+				log.Info(">>> GetReaderConfigHeader")
+				conn.Write(llrp.GetReaderConfigResponse(currentMessageID))
+				atomic.AddUint32(&currentMessageID, 1)
+				runtime.Gosched()
+				log.Info("<<< GetReaderConfigHeader")
+
+			} else if header == llrp.GetReaderCapabilityHeader {
+				// SRC received, start ROAR
+				log.Info(">>> GetReaderCapabilityHeader")
+				conn.Write(llrp.GetReaderCapabilityResponse(currentMessageID))
+				atomic.AddUint32(&currentMessageID, 1)
+				runtime.Gosched()
+				log.Info("<<< GetReaderCapabilityHeader")
+
+			} else if header == llrp.SetReaderConfigHeader {
 				// SRC received, start ROAR
 				log.Info(">>> SET_READER_CONFIG")
 				conn.Write(llrp.SetReaderConfigResponse(currentMessageID))
@@ -301,7 +319,7 @@ func runServer() int {
 	// Read virtual tags from a csv file
 	log.WithFields(log.Fields{
 		"File": *file,
-	}).Info("loading tags")
+	}).Info("now loading tags")
 
 	var tags llrp.Tags
 	if _, err := os.Stat(*file); os.IsNotExist(err) {
