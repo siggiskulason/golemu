@@ -208,6 +208,18 @@ func handleRequest(conn net.Conn, tags llrp.Tags) {
 
 		// Respond according to the LLRP packet header
 		header := binary.BigEndian.Uint16(buf[:2])
+		//inlen := binary.BigEndian.Uint32(buf[2:6])
+		id := binary.BigEndian.Uint32(buf[6:10])
+
+		if header >= 2048 {
+			// SRC received, start ROAR
+			log.Info(">>> Invalid version error message")
+			conn.Write(llrp.ErrorMessage(id, 110)) // M_UnsupportedVersion
+			runtime.Gosched()
+			log.Debugf("message: %v", buf)
+			log.Info("<<< Invalid version error message")
+			continue
+		}
 		log.Info("Got header", header)
 		if header == llrp.SetReaderConfigHeader || header == llrp.KeepaliveAckHeader || header == llrp.GetReaderCapabilityHeader || header == llrp.GetReaderConfigHeader {
 
